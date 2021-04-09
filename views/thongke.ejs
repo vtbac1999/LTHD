@@ -1,0 +1,805 @@
+<!--
+=========================================================
+Material Dashboard - v2.1.2
+=========================================================
+
+Product Page: https://www.creative-tim.com/product/material-dashboard
+Copyright 2020 Creative Tim (https://www.creative-tim.com)
+Coded by Creative Tim
+
+=========================================================
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link
+      rel="stylesheet"
+      href="https://use.fontawesome.com/releases/v5.6.3/css/all.css"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="76x76"
+      href="../assets/img/apple-icon.png"
+    />
+    <link rel="icon" type="image/png" href="../assets/img/favicon.png" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>
+      Admin
+    </title>
+    <meta
+      content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
+      name="viewport"
+    />
+    <!--     Fonts and icons     -->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Roboto+Slab:400,700|Material+Icons"
+    />
+    <link
+      rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css"
+    />
+    <!-- CSS Files -->
+    <link
+      href="../assets/css/material-dashboard.css?v=2.1.2"
+      rel="stylesheet"
+    />
+    <!-- CSS Just for demo purpose, don't include it in your project -->
+    <link href="../assets/demo/demo.css" rel="stylesheet" />
+  </head>
+
+  <body class="">
+    <div class="wrapper">
+      <div
+        class="sidebar"
+        data-color="purple"
+        data-background-color="white"
+        data-image="../assets/img/sidebar-1.jpg"
+      >
+        
+        <div class="logo">
+          <img style="margin-left: 2.5em;" src="img/logo.png" />
+        </div>
+        <div class="sidebar-wrapper">
+          <ul class="nav">
+            
+            <li class="nav-item active">
+            <a class="nav-link" href="/thongke">
+              <i class="material-icons"><i class="fas fa-chart-line"></i></i>
+              <p>Thống kê</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/qlsanpham">
+              <i class="material-icons">content_paste</i>
+              <p>Sản phẩm</p>
+            </a>
+          </li>
+         <li class="nav-item ">
+            <a class="nav-link" href="/hoadon">
+              <i class="material-icons">library_books</i>
+              <p>Hóa đơn</p>
+            </a>
+         </li>
+          
+          <li class="nav-item ">
+            <a class="nav-link" href="/mail">
+              <i class="material-icons">mail_ons</i>
+              <p>Mail</p>
+            </a>
+          </li>
+          <li class="nav-item ">
+            <a class="nav-link" href="/mailcontact">
+              <i class="material-icons">notifications</i>
+              <p>Contact message</p>
+            </a>
+          </li>
+
+          <li class="nav-item ">
+            <a class="nav-link" href="./coupon">
+              <i class="material-icons">bubble_chart</i>
+              <p>Mã giảm giá</p>
+            </a>
+          </li>
+          <li class="nav-item" >
+            <a class="nav-link" href="/nhaphang">
+              <i class="material-icons"><i class="fas fa-ambulance"></i></i>
+              <p>Nhập hàng</p>
+            </a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="/nhacungcap">
+                <i class="material-icons"><i class="fas fa-cart-arrow-down"></i></i>
+                <p>Nhà cung cấp</p>
+              </a>
+            </li>
+
+            <!-- <li class="nav-item active-pro ">
+            <a class="nav-link" href="./upgrade.html">
+              <i class="material-icons">unarchive</i>
+              <p>Upgrade to PRO</p>
+            </a>
+          </li> -->
+          </ul>
+        </div>
+      </div>
+      <div class="main-panel">
+        <!-- Navbar -->
+        <nav
+          class="navbar navbar-expand-lg navbar-transparent navbar-absolute fixed-top"
+        >
+          <div class="container-fluid">
+            <div class="navbar-wrapper">
+              <a class="navbar-brand" href="javascript:;">Thống kê</a>
+            </div>
+            <button
+              class="navbar-toggler"
+              type="button"
+              data-toggle="collapse"
+              aria-controls="navigation-index"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span class="sr-only">Toggle navigation</span>
+              <span class="navbar-toggler-icon icon-bar"></span>
+              <span class="navbar-toggler-icon icon-bar"></span>
+              <span class="navbar-toggler-icon icon-bar"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end">
+              <form class="navbar-form">
+                <div class="input-group no-border">
+                  <input
+                    type="text"
+                    value=""
+                    class="form-control"
+                    placeholder="Search..."
+                  />
+                  <button
+                    type="submit"
+                    class="btn btn-white btn-round btn-just-icon"
+                  >
+                    <i class="material-icons">search</i>
+                    <div class="ripple-container"></div>
+                  </button>
+                </div>
+              </form>
+              <ul class="navbar-nav">
+                
+                <li class="nav-item dropdown">
+                  <a
+                    class="nav-link"
+                    href="javascript:;"
+                    id="navbarDropdownProfile"
+                    data-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  >
+                    <i class="material-icons">person</i>
+                    <p class="d-lg-none d-md-block">
+                      Account
+                    </p>
+                  </a>
+                  <div
+                    class="dropdown-menu dropdown-menu-right"
+                    aria-labelledby="navbarDropdownProfile"
+                  >
+                    <a class="dropdown-item" href="/profile">Profile</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/admin">Log out</a>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+        <!-- End Navbar -->
+        <div class="content">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="card">
+                  <div id="id01" class="w3-modal popup" style="z-index: 9999;width: 40%;margin-left: 100px;" >
+                    <div class="w3-modal-content">
+                      <div class="modal-content ">
+                        <div class="modal-header">
+                          <p>
+                          <h6 style="font-family: Cairo , sans-serif;"><img style="height: 40px;;"
+                              src="img/logo.png" /></h6>
+                          </p>
+                          <button onclick="document.getElementById('id01').style.display='none'" type="button"
+                            class="close" data-dismiss="modal" style="font-size: 20px;">
+                            &times;
+                          </button>
+
+                        </div>
+                        <div class="modal-body text-primary">
+                          <table class="table" id='tabletonkho'>
+                                <thead>
+                                  <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Tên SP</th>
+                                    <th scope="col">Số lượng</th>
+                                     <th scope="col">Ngày hết hạn</th>
+                                  </tr>
+                                </thead>
+                                <tbody >
+                                  
+                                </tbody>
+                              </table>
+                        </div>
+                        <div class="modal-footer" >
+                          <button type="button" class="btn btn-default" id="btnmail" data-dismiss="modal"
+                            onclick="document.getElementById('id01').style.display='none'" style="margin: auto;">
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="card-header card-header-primary">
+                    <h4 class="card-title">Bảng thống kê</h4>
+                    <p class="card-category">Quản lí các thông số cơ bản</p>
+                  </div>
+                  <div class="card-body">
+                    <div class="table-responsive">
+                      <div class="container">
+                        <div class="row">
+                          <div
+                            class="col-lg-9"
+                            style="height: 35em; margin-right: 0px;"
+                          >
+
+                          <form method="POST" action="/thongke">
+                            <select name="Courses" id="Courses">
+                                <option value="<%=namtruoc%>"><%=namtruoc%></option>
+                                <option value="<%=namhientai%>"><%=namhientai%></option>
+                            </select>
+                            <input type='submit'name ='register' value="Thống kê">
+                        </form>
+                           
+                            <canvas id="myChart"></canvas>
+                          </div>
+                          <!-- <div class="col-lg-1">
+
+                          </div> -->
+                          <div class="col-lg-3" style="height: 32em;">
+                            <!-- <button style="background-color: aqua; height: 8em; width: 100%;">
+                              Số liệu theo từng tháng
+                            </button>
+                            <form action="/pie" method="POST">
+                            <input type="submit" value="Top sản phẩm bán chạy"
+                              style="
+                                background-color: rgba(255, 0, 26, 1);
+                                height: 8em;
+                                margin-top: 1em;
+                                width: 100%;
+                              "
+                            >
+
+                            </input>
+                          </form> -->
+                          <div style="background-color: aqua; height: 8em;">
+                            Tổng sản phẩm bán ra
+                          </div>
+                          <div
+                            style="
+                              background-color: rgba(255, 0, 26, 1);
+                              height: 8em;
+                              margin-top: 1em;
+                            "
+                          >
+                            Đơn hàng
+                          </div>
+                          
+                          <div
+                            style="
+                              background-color: rgba(255, 133, 133, 1);
+                              height: 8em;
+                              margin-top: 1em;
+                              color: black;
+                            "
+                          >
+                            Mail contact
+                          </div>
+                           
+                            <div  hidden>
+                            <% var i =0 
+                            bill.forEach(e=>{  %>
+                            <input  type='submit' class="bill_<%=i%>" value="<%=e%>">
+                            <%i++%>
+                            <%})%>
+                            <% var i =0 
+                            product.forEach(e=>{  %>
+                            <input type='submit' class="product_<%=i%>" value="<%=e%>">
+                            <%i++%>
+                            <%})%>
+                            <% var i =0 
+                            mail.forEach(e=>{  %>
+                            <input type='submit' class="mail_<%=i%>" value="<%=e%>">
+                            <%i++%>
+                            <%})%>
+                          </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-header card-header-primary">
+                    <h4 class="card-title">Bảng sản phẩm tồn kho</h4>
+                    <p class="card-category">
+                      Từ ngày : <input type="date" id="haohuttungay">
+                      Đến ngày : <input type="date" id="haohutdenngay">
+                      <input type="button" id="thongkehaohut" value="Thống kê">
+                    </p>
+                  </div>
+                    <div class="card-body">
+                    <div class="table-responsive">
+                      <table class="table">
+                        <thead class="text-primary">
+                          <th>
+                            STT
+                          </th>
+                          <th>
+                            Tên sản phẩm
+                          </th>
+                          <th>
+                            Số lượng
+                          </th>
+                          <th>
+                            Ngày nhập
+                          </th>
+                          <th>
+                            Hạn sử dụng
+                          </th>
+                          <th>
+                            Ngày hết hạn
+                          </th>
+                        </thead>
+                        <tbody id="myTable">
+                          <%let l=0;hangton.forEach(e=>{l++;%>
+                            <tr>
+                              <td><%=l%></td>
+                              <td><%=e.tensp%></td>
+                              <td><%=e.sl%></td>
+                              
+                              <td><%=e.ngaynhap%></td>
+                              <td><%=e.hsd%></td>
+                              <td><%=e.ngayhethan%></td>
+                            </tr>
+                          <%})%>
+                          
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  </div>
+                  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>< -->
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="card card-plain">
+                  <!-- <div class="card-header card-header-primary">
+                  <h4 class="card-title mt-0"> Bảng sản phẩm</h4>
+                  <p class="card-category"> Quản lí các thông tin sản phẩm</p>
+                </div> -->
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="footer">
+          <div class="container-fluid">
+            <nav class="float-left"></nav>
+            <div class="copyright float-right">
+              &copy;
+              <script>
+                document.write(new Date().getFullYear());
+              </script>
+              , made with <i class="material-icons">favorite</i> by
+              <a href="/" target="_blank">Team 1</a> for a better web.
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+    
+    <!--   Core JS Files   -->
+    <script src="../assets/js/core/jquery.min.js"></script>
+    <script src="../assets/js/core/popper.min.js"></script>
+    <script src="../assets/js/core/bootstrap-material-design.min.js"></script>
+    <script src="../assets/js/plugins/perfect-scrollbar.jquery.min.js"></script>
+    <!-- Plugin for the momentJs  -->
+    <script src="../assets/js/plugins/moment.min.js"></script>
+    <!--  Plugin for Sweet Alert -->
+    <script src="../assets/js/plugins/sweetalert2.js"></script>
+    <!-- Forms Validations Plugin -->
+    <script src="../assets/js/plugins/jquery.validate.min.js"></script>
+    <!-- Plugin for the Wizard, full documentation here: https://github.com/VinceG/twitter-bootstrap-wizard -->
+    <script src="../assets/js/plugins/jquery.bootstrap-wizard.js"></script>
+    <!--	Plugin for Select, full documentation here: http://silviomoreto.github.io/bootstrap-select -->
+    <script src="../assets/js/plugins/bootstrap-selectpicker.js"></script>
+    <!--  Plugin for the DateTimePicker, full documentation here: https://eonasdan.github.io/bootstrap-datetimepicker/ -->
+    <script src="../assets/js/plugins/bootstrap-datetimepicker.min.js"></script>
+    <!--  DataTables.net Plugin, full documentation here: https://datatables.net/  -->
+    <script src="../assets/js/plugins/jquery.dataTables.min.js"></script>
+    <!--	Plugin for Tags, full documentation here: https://github.com/bootstrap-tagsinput/bootstrap-tagsinputs  -->
+    <script src="../assets/js/plugins/bootstrap-tagsinput.js"></script>
+    <!-- Plugin for Fileupload, full documentation here: http://www.jasny.net/bootstrap/javascript/#fileinput -->
+    <script src="../assets/js/plugins/jasny-bootstrap.min.js"></script>
+    <!--  Full Calendar Plugin, full documentation here: https://github.com/fullcalendar/fullcalendar    -->
+    <script src="../assets/js/plugins/fullcalendar.min.js"></script>
+    <!-- Vector Map plugin, full documentation here: http://jvectormap.com/documentation/ -->
+    <script src="../assets/js/plugins/jquery-jvectormap.js"></script>
+    <!--  Plugin for the Sliders, full documentation here: http://refreshless.com/nouislider/ -->
+    <script src="../assets/js/plugins/nouislider.min.js"></script>
+    <!-- Include a polyfill for ES6 Promises (optional) for IE11, UC Browser and Android browser support SweetAlert -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/core-js/2.4.1/core.js"></script>
+    <!-- Library for adding dinamically elements -->
+    <script src="../assets/js/plugins/arrive.min.js"></script>
+    <!--  Google Maps Plugin    -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
+    <!-- Chartist JS -->
+    <script src="../assets/js/plugins/chartist.min.js"></script>
+    <!--  Notifications Plugin    -->
+    <script src="../assets/js/plugins/bootstrap-notify.js"></script>
+    <!-- Control Center for Material Dashboard: parallax effects, scripts for the example pages etc -->
+    <script
+      src="../assets/js/material-dashboard.js?v=2.1.2"
+      type="text/javascript"
+    ></script>
+    <!-- Material Dashboard DEMO methods, don't include it in your project! -->
+    <script src="../assets/demo/demo.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+    <script>
+      
+      var data_bill = [];
+      for(var i=1 ;i<=12;i++)
+      {
+       data = $('.bill_'+i).val();
+       data_bill.push(data);
+      //  alert(data)
+       
+      }
+      var data_product = [];
+      for(var i=1 ;i<=12;i++)
+      {
+       data = $('.product_'+i).val();
+       data_product.push(data);
+      //  alert(data)
+       
+      }
+      var data_mail = [];
+      for(var i=1 ;i<=12;i++)
+      {
+       data = $('.mail_'+i).val();
+       data_mail.push(data);
+      
+       
+      }
+      
+
+      $(document).ready(function () {
+
+        
+        
+        
+
+        document.getElementById('submit_month').onclick = () => {
+  const select = document.querySelector("select[name='monthofbirth']")
+  const value = select.value;
+  const option = select.querySelector(`option[value='${value}']`)
+  const text = option.innerText
+  alert(text)
+}
+
+        $().ready(function () {
+          $sidebar = $('.sidebar');
+
+          $sidebar_img_container = $sidebar.find('.sidebar-background');
+
+          $full_page = $('.full-page');
+
+          $sidebar_responsive = $('body > .navbar-collapse');
+
+          window_width = $(window).width();
+
+          fixed_plugin_open = $(
+            '.sidebar .sidebar-wrapper .nav li.active a p'
+          ).html();
+
+          if (window_width > 767 && fixed_plugin_open == 'Dashboard') {
+            if ($('.fixed-plugin .dropdown').hasClass('show-dropdown')) {
+              $('.fixed-plugin .dropdown').addClass('open');
+            }
+          }
+
+          $('.fixed-plugin a').click(function (event) {
+            // Alex if we click on switch, stop propagation of the event, so the dropdown will not be hide, otherwise we set the  section active
+            if ($(this).hasClass('switch-trigger')) {
+              if (event.stopPropagation) {
+                event.stopPropagation();
+              } else if (window.event) {
+                window.event.cancelBubble = true;
+              }
+            }
+          });
+
+          $('.fixed-plugin .active-color span').click(function () {
+            $full_page_background = $('.full-page-background');
+
+            $(this).siblings().removeClass('active');
+            $(this).addClass('active');
+
+            var new_color = $(this).data('color');
+
+            if ($sidebar.length != 0) {
+              $sidebar.attr('data-color', new_color);
+            }
+
+            if ($full_page.length != 0) {
+              $full_page.attr('filter-color', new_color);
+            }
+
+            if ($sidebar_responsive.length != 0) {
+              $sidebar_responsive.attr('data-color', new_color);
+            }
+          });
+
+          $('.fixed-plugin .background-color .badge').click(function () {
+            $(this).siblings().removeClass('active');
+            $(this).addClass('active');
+
+            var new_color = $(this).data('background-color');
+
+            if ($sidebar.length != 0) {
+              $sidebar.attr('data-background-color', new_color);
+            }
+          });
+
+          $('.fixed-plugin .img-holder').click(function () {
+            $full_page_background = $('.full-page-background');
+
+            $(this).parent('li').siblings().removeClass('active');
+            $(this).parent('li').addClass('active');
+
+            var new_image = $(this).find('img').attr('src');
+
+            if (
+              $sidebar_img_container.length != 0 &&
+              $('.switch-sidebar-image input:checked').length != 0
+            ) {
+              $sidebar_img_container.fadeOut('fast', function () {
+                $sidebar_img_container.css(
+                  'background-image',
+                  'url("' + new_image + '")'
+                );
+                $sidebar_img_container.fadeIn('fast');
+              });
+            }
+
+            if (
+              $full_page_background.length != 0 &&
+              $('.switch-sidebar-image input:checked').length != 0
+            ) {
+              var new_image_full_page = $('.fixed-plugin li.active .img-holder')
+                .find('img')
+                .data('src');
+
+              $full_page_background.fadeOut('fast', function () {
+                $full_page_background.css(
+                  'background-image',
+                  'url("' + new_image_full_page + '")'
+                );
+                $full_page_background.fadeIn('fast');
+              });
+            }
+
+            if ($('.switch-sidebar-image input:checked').length == 0) {
+              var new_image = $('.fixed-plugin li.active .img-holder')
+                .find('img')
+                .attr('src');
+              var new_image_full_page = $('.fixed-plugin li.active .img-holder')
+                .find('img')
+                .data('src');
+
+              $sidebar_img_container.css(
+                'background-image',
+                'url("' + new_image + '")'
+              );
+              $full_page_background.css(
+                'background-image',
+                'url("' + new_image_full_page + '")'
+              );
+            }
+
+            if ($sidebar_responsive.length != 0) {
+              $sidebar_responsive.css(
+                'background-image',
+                'url("' + new_image + '")'
+              );
+            }
+          });
+
+          $('.switch-sidebar-image input').change(function () {
+            $full_page_background = $('.full-page-background');
+
+            $input = $(this);
+
+            if ($input.is(':checked')) {
+              if ($sidebar_img_container.length != 0) {
+                $sidebar_img_container.fadeIn('fast');
+                $sidebar.attr('data-image', '#');
+              }
+
+              if ($full_page_background.length != 0) {
+                $full_page_background.fadeIn('fast');
+                $full_page.attr('data-image', '#');
+              }
+
+              background_image = true;
+            } else {
+              if ($sidebar_img_container.length != 0) {
+                $sidebar.removeAttr('data-image');
+                $sidebar_img_container.fadeOut('fast');
+              }
+
+              if ($full_page_background.length != 0) {
+                $full_page.removeAttr('data-image', '#');
+                $full_page_background.fadeOut('fast');
+              }
+
+              background_image = false;
+            }
+          });
+
+          $('.switch-sidebar-mini input').change(function () {
+            $body = $('body');
+
+            $input = $(this);
+
+            if (md.misc.sidebar_mini_active == true) {
+              $('body').removeClass('sidebar-mini');
+              md.misc.sidebar_mini_active = false;
+
+              $('.sidebar .sidebar-wrapper, .main-panel').perfectScrollbar();
+            } else {
+              $('.sidebar .sidebar-wrapper, .main-panel').perfectScrollbar(
+                'destroy'
+              );
+
+              setTimeout(function () {
+                $('body').addClass('sidebar-mini');
+
+                md.misc.sidebar_mini_active = true;
+              }, 300);
+            }
+
+            // we simulate the window Resize so the charts will get updated in realtime.
+            var simulateWindowResize = setInterval(function () {
+              window.dispatchEvent(new Event('resize'));
+            }, 180);
+
+            // we stop the simulation of Window Resize after the animations are completed
+            setTimeout(function () {
+              clearInterval(simulateWindowResize);
+            }, 1000);
+          });
+        });
+      });
+
+      var ctx = document.getElementById('myChart').getContext('2d');
+      // alert(data_m[7]);
+      
+      var chart = new Chart(ctx, {
+        // The type of chart we want to create
+        // alert(data_m);
+
+        type: 'line',
+        // The data for our dataset
+        data: {
+          labels: [
+            'Tháng 1',
+            'Tháng 2',
+            'Tháng 3',
+            'Tháng 4',
+            'Tháng 5',
+            'Tháng 6',
+            'Tháng 7',
+            'Tháng 8',
+            'Tháng 9',
+            'Tháng 10',
+            'Tháng 11',
+            'Tháng 12',
+          ],
+          datasets: [
+            {
+              label: 'Đơn hàng',
+              fill: false,
+              LineTension: 0.1,
+              backgroundColor: 'rgba(255, 0, 26, 1)',
+              borderColor: 'rgba(255, 0, 26, 1)',
+              borderCapStyle: 'butt',
+              data: data_bill,
+            },
+           
+            {
+              label: 'Tổng sản phẩm bán ra',
+              fill: false,
+              LineTension: 0.1,
+              backgroundColor: 'aqua',
+              borderColor: 'aqua',
+              borderCapStyle: 'butt',
+              // backgroundColor: "none",
+              // borderColor: 'rgb(255, 99, 132)',
+              data:data_product,
+            },
+            {
+              label: 'Mail contact',
+              fill: false,
+              LineTension: 0.1,
+              backgroundColor: 'rgba(255, 133, 133, 1)',
+              borderColor: 'rgba(255, 133, 133, 1)',
+              borderCapStyle: 'butt',
+              // backgroundColor: "none",
+              // borderColor: 'rgb(255, 99, 132)',
+              data: data_mail,
+            },
+          ],
+        },
+
+        // Configuration options go here
+        options: {},
+      });
+    </script>
+    <script>
+      $(document).ready(function(){
+        function callbackdata(date1,date2,cb){
+          $.ajax({
+            url:'/abc',
+            method:'post',
+            contentType:'application/json',
+            data :JSON.stringify({date1:date1,date2:date2}),
+            success : res=>{
+              cb(res);
+            }
+          })
+        }
+        $('#thongkehaohut').click(function(){
+          let getngaybatdau = $('#haohuttungay').val();
+          let getketthuc = $('#haohutdenngay').val();
+          if(getngaybatdau.length==0){
+            alert('Vui lòng chọn ngày bắt đầu cụ thể !!!');
+            return;
+          }
+          if(getketthuc.length==0){
+            alert('Vui lòng chọn ngày kết thúc cụ thể !!!');
+            return;
+          }
+          callbackdata(getngaybatdau,getketthuc,cb=>{
+            if(cb.length!=0){
+              $('#id01').css('display','block');
+              $('#tabletonkho > tbody>tr').remove();
+              var stt=0;
+              cb.forEach(e=>{stt++;
+                 $('#tabletonkho > tbody:last-child').append(
+                   '<tr><td>'+stt+'</td>'+
+                   '<td>'+e.tensp+'</td>'+
+                   '<td>'+e.sl+'</td>'+
+                   '<td>'+e.ngayhethan+'</td></tr>'
+                   );
+              })
+             
+            }else{
+              alert(`Không có hao hụt trong khoảng ${getngaybatdau} tới ${getketthuc}`);
+            }
+          })
+          
+          //$('#id01').css('display','block');
+        })
+      })
+    </script>
+  </body>
+</html>
