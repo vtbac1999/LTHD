@@ -247,6 +247,7 @@
                   </div>
                 </div>
               </div>
+              
               <!-- <div class="checkout__input">
                 <p>Country<span>*</span></p>
                 <input type="text" />
@@ -272,14 +273,7 @@
                 <input id="city" type="text" />
                 <p id="ecity" style="color: red;"></p>
               </div>
-              <!-- <div class="checkout__input">
-                                <p>Country/State<span>*</span></p>
-                                <input type="text">
-                            </div> -->
-              <!-- <div class="checkout__input">
-                                <p>Postcode / ZIP<span>*</span></p>
-                                <input type="text">
-                            </div> -->
+             
               <div class="row">
                 <div class="col-lg-6">
                   <div class="checkout__input">
@@ -288,6 +282,7 @@
                     <p id="ephone" style="color: red;"></p>
                   </div>
                 </div>
+
                 <div class="col-lg-6">
                   <div class="checkout__input">
                     <p>Email<span>*</span></p>
@@ -373,8 +368,17 @@
                   </label>
                 </div>
 
+                <a href= "<%=link%>" > Heloo</a>
+
                 <div style="display: none;" id="paypal-button-container"></div>
                 <!-- <form action="/buy" method="POST"> -->
+
+            
+                <button style="display: none;" type="submit" id="zalopay-btn" class="site-btn"  >
+                  Zalo Pay
+                </button>
+
+
                 <button type="submit" class="site-btn" disabled>
                   PLACE ORDER
                 </button>
@@ -403,6 +407,14 @@
 
     <script>
       $(document).ready(() => {
+
+       
+
+
+
+      
+
+
         function getnumbertoconvervndtousd(callback) {
           $.ajax({
             url:
@@ -415,11 +427,11 @@
           });
         }
         let vnd = $('#total_bill').text();
-
         const getresponse = getnumbertoconvervndtousd((value) => {
-          //console.log(value.VND_USD);
+          console.log("CC Tinh phan "+value.VND_USD);
           vnd = parseFloat(vnd) * value.VND_USD;
         });
+
         var flagpaypal = false;
         paypal
           .Buttons({
@@ -454,26 +466,7 @@
         ////////////////////////////
 
 
-        $('#zalopay').click(() => {
-          $.ajax({
-                    url: '/bill',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                      type:'payment',
-                      first_name: getfn.val(),
-                      last_name: getln.val(),
-                      street_address: getad.val(),
-                      apartment_address:getad1.val(),
-                      phone: getphone.val(),
-                      email: getemailbill.val(),
-                      note: getnote.val()
-                    }),
-                    success: res=>{
-                      window.location.href='http://localhost:3000/';
-                    }
-                  });
-        });
+        
         $('#payment').click(() => {
           let getcheck = $('#payment').is(':checked');
           if (getcheck == true) {
@@ -484,6 +477,7 @@
             $('.site-btn').prop('disabled', true);
           }
         });
+
         $('#paypal').click(() => {
           let getcheck = $('#paypal').is(':checked');
           if (getcheck == true) {
@@ -495,6 +489,25 @@
             $('.site-btn').prop('disabled', true);
           }
         });
+
+        $('#zalopay').click(() => {
+
+          let getcheck = $('#zalopay').is(':checked');
+          if (getcheck == true) {
+            $('#zalopay-btn').css('display', 'block');
+            $('#payment').prop('checked', false);
+            $('#paypal').prop('checked', false);
+            $('.site-btn').prop('disabled', false);
+          } else {
+            $('#zalopay-btn').css('display', 'none');
+            $('.site-btn').prop('disabled', true);
+          }
+          
+           
+            
+            
+        });
+
         function checkemailbill(email, cb) {
           $.ajax({
             url: '/validateemail',
@@ -506,6 +519,7 @@
             },
           });
         }
+
         function checkin4() {
           let getfn = $('#fn');
           let getln = $('#ln');
@@ -643,13 +657,18 @@
           let getcheckpaypal = $('#paypal').is(':checked');
           
           checkin4();
+          
+        });
+
+        $('#zalopay-btn').click((e) => {
+          // e.preventDefault();
+          // window.location.href="https://sbgateway.zalopay.vn/openinapp?order=" + encodeURIComponent(b64Order);
+          
         });
       });
       //This function displays Smart Payment Buttons on your web page.
     </script>
-    <script>
-      $(document).ready(() => {});
-    </script>
+    
   </body>
   
 </html>

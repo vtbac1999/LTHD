@@ -160,6 +160,12 @@ ol {
 
 /* buttons */
 
+#zalopay-btn {
+	
+	color:#249BC8;
+	background:#ffffff;
+}
+
 .primary-btn {
 	display: inline-block;
 	font-size: 14px;

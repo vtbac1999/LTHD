@@ -96,21 +96,25 @@
       </div>
 
       <div class="panel-body">
-        <form id="form" class="form-horizontal" method="POST" action="/admin">
+        <form id="form" class="form-horizontal" method="POST" action="/login">
             
           <div class="input-group">
             <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-           
-            <input type="text" class="form-control" name="username" placeholder="Email" />
+            <input type="text" class="form-control" name="email" placeholder="Email" />
           </div>
+          <p id="e_email" style="color: red;"></p>
+
 
           <div class="input-group">
             <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
             <input type="password" class="form-control" name="password" placeholder="Password" />
           </div>
+          <p id="e_pass" style="color: red;"></p>
+
 
           <div class="form-group">
             <!-- Button -->
+            <span>  Don't have account ? </span><a href="/register" />Register </a>
             <div class="col-sm-12 controls">
               <button type="submit" class="btn btn-primary pull-right">
                 <i class="glyphicon glyphicon-log-in"></i> Log in
@@ -124,6 +128,91 @@
     </div>
   </div>
 </div>
+
+
+<script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/jquery.nice-select.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="js/jquery.slicknav.js"></script>
+    <script src="js/mixitup.min.js"></script>
+    <script src="js/owl.carousel.min.js"></script>
+    <script src="js/main.js"></script>
+
+
+    <script>
+       $(document).ready(() => {
+        function checkemailbill(email, cb) {
+          $.ajax({
+            url: '/validateemail',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ email: email }),
+            success: (res) => {
+              cb(res);
+            },
+          });
+        }
+        function checkin4() {
+          let getemail = $('#email');
+          let getpassword = $('#password');
+         
+
+  
+
+          
+
+          var flagemail = false;
+          if (getemail.val().length == 0) {
+            getemail.focus();
+            $('#e_email').text('Please valid your email!!!');
+            return false;
+          } else {
+            $('#e_email').text('');
+            
+            checkemailbill(getemail.val(), (cb) => {
+       
+              if (cb == false) {
+                $('#e_email').text('Email not exist !!!');
+         
+                getemail.focus();
+                return false;
+              } else {
+               
+                $('#e_email').text('');
+                
+              }
+            });
+          }
+
+          if (getpassword.val().length == 0) {
+            getpassword.focus();
+            $('#e_pass').text('Please valid your password !!!');
+            return false;
+          } else {
+            $('#e_pass').text('');
+          }
+         
+          
+
+          return true;
+        }
+
+        $('#Create-Account').click((e) => {
+          e.preventDefault();
+          
+          
+          checkin4();
+          
+        });
+
+
+       });
+    </script>
+
+
+
+
 
 <div id="particles"></div>
 

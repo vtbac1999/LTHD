@@ -1,45 +1,63 @@
-const express = require('express');
+const router = require('express').Router();
+const User = require('../model/user');
+const {registerValidation, loginValidation} = require('../validation');
+// const {registerValidation} = require('../validation');
+const bcrypt =require('bcrypt');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const router = express.Router();
-const User = require('./../models/User');
-const { registerValidator } = require('./../validations/auth');
 
-router.post('/register', async (request, response) => {
-    const { error } = registerValidator(request.body);
 
-    if (error) return response.status(422).send(error.details[0].message);
+// const { error } = Joi.validate(req.body,schema);
 
-    const checkEmailExist = await User.findOne({ email: request.body.email });
 
-    if (checkEmailExist) return response.status(422).send('Email is exist');
 
-    const salt = await bcrypt.genSalt(10);
-    const hashPassword = await bcrypt.hash(request.body.password, salt);
+router.post('/register', async(req, res)=>{
 
-    const user = new User({
-        name: request.body.name,
-        email: request.body.email,
-        password: hashPassword,
+
+    //Let validation
+    const {error} = registerValidation(req.body);
+    if(error) return res.status(400).send(error.details[0].message);
+
+    const emailExits =await User.findOne({email: req.body.email});
+    if(emailExits)return res.status(400).send('Email exist');
+
+    //hash password
+    const salt =await bcrypt.genSalt(10);
+    const hashedPassword= await bcrypt.hash(req.body.password,salt);
+
+    console.log("CO VO DAY");
+
+
+    const user =new User({
+        name:req.body.name,
+        email:req.body.email,
+        password:hashedPassword
     });
-
     try {
-        const newUser = await user.save();
-        await response.send(newUser);
+        const savedUser= await user.save();
+        req.session.user = user;
+        res.redirect('http://localhost:3000');
     } catch (err) {
-        response.status(400).send(err);
+        res.status(400).send(err);
     }
 });
 
-router.post('/login', async (request, response) => {
-    const user = await User.findOne({email: request.body.email});
-    if (!user) return response.status(422).send('Email or Password is not correct');
 
-    const checkPassword = await bcrypt.compare(request.body.password, user.password);
+router.post('/login', async(req,res)=>{
 
-    if (!checkPassword) return response.status(422).send('Email or Password is not correct');
+    const{ error }=loginValidation(req.body);
+    if(error) return res.status(400).send(error.details[0].message);
+
+    const user =await User.findOne({email: req.body.email});
+    if(!user) return res.status(400).send('Email is not found');
+
+    const validPass = await bcrypt.compare(req.body.password,user.password);
+    if(!validPass)  return res.status(400).send('Invalid password');
+
     
-    return response.send(`User ${user.name} has logged in`);
-})
+    req.session.user = user;
+    res.redirect('http://localhost:3000');
 
-module.exports = authRouter;
+
+});
+
+module.exports=router;

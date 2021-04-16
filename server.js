@@ -3,11 +3,21 @@ const bodyParser = require('body-parser');
 const app = express();
 const ejs = require('ejs');
 const mongodb = require('mongoose');
+const router = require('express').Router();
+const https = require('https');
+const axios =require('axios');
+
+const path = require('path');
 const cors = require('cors');
 const csrf = require('csurf');
 const bcrypt = require('bcrypt');
-var cookieParser = require('cookie-parser');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const mongostore = require('connect-mongo')(session);
 const excelToJson = require('convert-excel-to-json');
+const passport = require('passport');
+const fastcsv = require("fast-csv");
+const fs = require("fs");
 const csrfProctection = csrf({ cookie: true });
 const multer = require('multer');
 const nodemailer = require('nodemailer');
@@ -17,10 +27,16 @@ const paypal = require('paypal-rest-sdk');
 const CryptoJS = require('crypto-js'); // npm install crypto-js
 const uuid = require('uuid'); // npm install uuid
 const moment = require('moment'); // npm install moment
+const QRCode = require('qrcode');
+
+const User = require('./model/user');
+const {registerValidation, loginValidation} = require('./validation');
+
+const jwt = require('jsonwebtoken');
 
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+
 config = {
   appid: "2554",
   key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
@@ -28,71 +44,6 @@ config = {
 };
 
 let appTransID = `${moment().format('YYMMDD')}_${uuid.v1()}`
-
-const order = {
-  appid: config.appid, 
-  apptransid: appTransID,
-  appuser: "demo", 
-  apptime: Date.now(), // miliseconds
-  item: "[]", 
-  embeddata: "{}", 
-  amount: 10000, 
-  description: "Demo - Thanh toán đơn hàng #" + appTransID, 
-  bank_code: "zalopayapp", 
-};
-
-// appid|apptransid|appuser|amount|apptime|embeddata|item
-const data = config.appid + "|" + order.apptransid + "|" + order.appuser + "|" + order.amount + "|" + order.apptime + "|" + order.embeddata + "|" + order.item;
-order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
-
-const b64Order = Buffer.from(JSON.stringify(order)).toString('base64');
-
-// https://sbgateway.zalopay.vn/openinapp?order={base64_data_with_urlencode}
-console.log("https://sbgateway.zalopay.vn/openinapp?order=" + encodeURIComponent(b64Order));
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-app.post('/callback', (req, res) => {
-  let result = {};
-
-  try {
-    let dataStr = req.body.data;
-    let reqMac = req.body.mac;
-
-    let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
-    console.log("mac =", mac);
-
-
-    // kiểm tra callback hợp lệ (đến từ ZaloPay server)
-    if (reqMac !== mac) {
-      // callback không hợp lệ
-      result.return_code = -1;
-      result.return_message = "mac not equal";
-    }
-    else {
-      // thanh toán thành công
-      // merchant cập nhật trạng thái cho đơn hàng
-      let dataJson = JSON.parse(dataStr, config.key2);
-      console.log("update order's status = success where app_trans_id =", dataJson["app_trans_id"]);
-
-      result.return_code = 1;
-      result.return_message = "success";
-    }
-  } catch (ex) {
-    result.return_code = 0; // ZaloPay server sẽ callback lại (tối đa 3 lần)
-    result.return_message = ex.message;
-  }
-
-  // thông báo kết quả cho ZaloPay server
-  res.json(result);
-});
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -105,22 +56,16 @@ var convertousd=0;
 var macoupon = 'no';
 
 request('https://free.currconv.com/api/v7/convert?q=VND_USD&compact=ultra&apiKey=925acffac404d631739e',function (error, response, body) { 
-  //console.log(JSON.parse(body).VND_USD * 23000);
   convertousd = JSON.parse(body).VND_USD;
-  console.log(convertousd);
   }
 );
 
 
-var router = require('express').Router();
+
 var arr_qty =[];
-var arr_sl =[];
-const passport = require('passport');
-const fastcsv = require("fast-csv");
-const fs = require("fs");
-   
- var today = new Date();
- var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate()+'_time_'+today.getHours()+'-'+today.getMinutes()+'-'+today.getSeconds();
+var arr_sl =[];  
+var today = new Date();
+var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate()+'_time_'+today.getHours()+'-'+today.getMinutes()+'-'+today.getSeconds();
  
 
 // connect mongodb
@@ -135,15 +80,14 @@ mongodb
   .then(() => {
     console.log('Connect database seccess !!!');
   });
-var path = require('path');
+
 
 /// middleware
 app.use(express.json());
 app.use(express.static('./public'));
 //app.use(express.static(path.join(__dirname, 'public')));
 var Cart = require('./model/cart');
-const session = require('express-session');
-const mongostore = require('connect-mongo')(session);
+
 
 app.use(
   session({
@@ -152,7 +96,7 @@ app.use(
     resave: true,
     // resave: true,
     store: new mongostore({ mongooseConnection: mongodb.connection }),
-    cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 60 },
+    cookie: { secure: false, httpOnly: true, maxAge: 600 },
   })
 );
 
@@ -164,38 +108,19 @@ app.set('view engine', 'ejs');
 const port = 3000;
 app.listen(port, console.log(`Listening on port ${port}...`));
 
-const schema = require('./model/schema');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-// app.use(csrfProctection);
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 // this middleware use to build restful api so need this line to fix 'no access control allow origin' OK
 app.use(cors());
 const mongoosePaginate = require('mongoose-paginate-v2');
-//
-// const dssanpham = require('./model/sanpham');
-// app.post('/', async function (req, res) {
-//   const sp = new dssanpham({
-//     tensp: req.body.tensp,
-//     fileanh: req.body.fileanh,
-//     chitiet: req.body.chitiet,
-//     gia: req.body.gia,
-//     maloaisp: req.body.maloaisp,
-//     sl: req.body.sl,
-//     hsd: req.body.hsd
-//   });
 
-//   try {
-//     const sa = await sp.save();
-//     res.send(sa);
-//   } catch (err) {
-//     res.send(err);
-//   }
-// });
+
 
 // load product route index
+const schema = require('./model/schema');
 const cartnull = { item: {}, totalQty: 0, totalPrice: Number(0) };
 const allsp = require('./model/sanpham');
 const dssanpham = require('./model/sanpham');
@@ -208,37 +133,180 @@ const ObjectId = require('mongodb').ObjectID;
 
 
 
+var version = "00"
+var version_len = "02"
+var version_value= "01"
+/////////////////////////////////////////////////////////
+var method ="01"
+var method_len ="02"  
+var value_method= "11"
+///////////////////////////////////////////////////////////////
+var info = "29"
+var info_len="33"
+  var unique_id ="01"
+  var unique_len=""  //len cua unique
+  var unique = ""   //unique mac dinh
+  var infomation_id="02"
+  var information_len=""
+  var information=""
+//////////////////////////
+var infosub = "62" 
+var infosub_len = ""
+var bill01 = "01"
+var bill_len = "" //len id_bill
+var bill_value ="hdlsdj1212" 
+var customer ="06"
+var customer_len=""
+var customer_value=""
+//////////////////////////////
+var subtotal ="54"
+var subtotal_len=""
+var subtotal_value=""
 
-app.post('/checkcoupon', async function (req, res) {
-  macoupon = req.body.id;
-  let getcoupon = await coupon.find({ ma: req.body.id, trangthai: 1 });
-  let phantramcoupon = 0;
-  if (getcoupon.length == 1) {
-    phantramcoupon = getcoupon[0].phantram;
-    req.session.coupon = phantramcoupon;
-  }
-  res.send({ phantram: phantramcoupon });
-});
+var chuoi =  version + version_len+ version_value + method+ method_len+ value_method+info+info_len+unique_id+unique_len+unique
+var chuoi2= infomation_id+information_len+information
+var chuoi3= infosub+infosub_len+bill01+bill_len+bill_value+customer+customer_len+customer_value+subtotal+subtotal_len+subtotal_value;
+var chuoitong = chuoi+chuoi2+chuoi3;
+
+// console.log("chuoi la " +chuoitong);
+//home
+// const data2 
+// const data
 app.get('/', async (req, res) => {
-  const data = await dssanpham.find({
+  // req.session.destroy();
+   data = await dssanpham.find({
     trangthai: 'con',
     hieuluc: 'con',
     sl: { $regex: /[^0]/, $options: 'm' },
   });
-  const data2 = await dsspnoibat.find({
+  data2 = await dsspnoibat.find({
     trangthai: 'con',
     noibat: true,
     sl: { $regex: /[^0]/, $options: 'm' },
   });
   var cart = new Cart(req.session.cart || cartnull);
+  // console.log(req.session.user);
+  var login = (req.session.user || null);
   res.render('index', {
     listsp: data,
     listspnoibat: data2,
     message: '',
     session: cart,
+    logined: login
   });
-  //console.log(session.cart);
+
+
+  // let img='';
+  //   let qr= await QRCode.toDataURL(chuoitong);
+  //   console.log(qr);
+  //   img = `<image src= " `+qr+ `" />`
+  //   return res.send(img);
 });
+
+
+
+const authRoute = require('./routes/auth');
+// const userRoute = require('./routes/users');
+
+
+//Route Middlewares
+app.use('/api/user',authRoute);
+// app.use('/api/user', userRouter);
+app.get('/register',async(req, res)=>{
+  if(req.session.user)
+  {
+    return res.redirect('http://localhost:3000')
+  }
+  else
+  {
+    return res.render('register.ejs');
+  }
+
+  
+});
+
+app.get('/login',async(req, res)=>{
+  if(req.session.user)
+  {
+    return res.redirect('http://localhost:3000')
+  }
+  else
+  {
+    return res.render('login.ejs');
+  }
+
+  
+});
+
+app.post('/validateemail', (req, res) => {
+  var email = req.body.email;
+  console.log("cc"+email);
+  console.log(email.length);
+  const emailExistence = require('email-existence');
+  emailExistence.check(email, function (error, response) {
+    res.send(response);
+    console.log(response);
+  });
+})
+
+
+
+
+
+app.post('/register', async(req, res)=>{
+    //hash password
+    // const salt = bcrypt.genSalt(10);
+    // const hashedPassword=  bcrypt.hash(req.body.password,salt);
+
+    console.log("CO VO DAY");
+
+    data = await dssanpham.find({
+      trangthai: 'con',
+      hieuluc: 'con',
+      sl: { $regex: /[^0]/, $options: 'm' },
+    });
+    data2 = await dsspnoibat.find({
+      trangthai: 'con',
+      noibat: true,
+      sl: { $regex: /[^0]/, $options: 'm' },
+    });
+
+    // console.log(req.session.user);
+   
+
+    const user =new User({
+        name:req.body.name,
+        email:req.body.email,
+        password:req.body.password
+    });
+    try {
+        const savedUser= user.save();
+        req.session.user = user;
+        if(req.session.user)
+        var login = (req.session.user.name || null);
+    var cart = new Cart(req.session.cart || cartnull);
+
+        console.log(cart);
+        
+  res.render('index', {
+    listsp: data,
+    listspnoibat: data2,
+    message: '',
+    session: cart,
+    logined: login
+  });
+       
+
+
+    } catch (err) {
+        res.status(400).send(err);
+    }
+});
+
+
+
+app.post('/login',authRoute);
+
 
 app.get('/index', async (req, res) => {
   const data = await dssanpham.find({
@@ -252,24 +320,227 @@ app.get('/index', async (req, res) => {
     sl: { $regex: /[^0]/, $options: 'm' },
   });
   var cart = new Cart(req.session.cart || cartnull);
+  var login = (req.session.user || '');
   res.render('index', {
     listsp: data,
     listspnoibat: data2,
     message: '',
     session: cart,
+    logined: login
   });
 });
 
-// route blog detail
+
+
+
+app.get('/add-to-cart', async function (req, res) {
+  var giasell;
+  var id = req.query.id;
+  var sl = req.query.sl;
+  var cart = new Cart(req.session.cart ? req.session.cart : cartnull);
+  const product = await allsp.findById({ _id: new ObjectId(id) });
+    
+  if (product.hieuluc == 'con')
+    giasell = product.gia - (product.gia * product.phantram) / 100;
+    else giasell = product.gia;
+  
+    cart.add(product, product._id, sl, giasell);
+    req.session.cart = cart;
+    res.redirect('/');
+});
+
+//route shop details
+
+var getitem = require('./model/sanpham');
+app.get('/shop-details', function (req, res) {
+  var id = req.query.id;
+  var o_id = new ObjectId(id);
+  getitem
+    .findOne({ _id: o_id })
+    .then((docs) => {
+      var sp = docs;
+      res.render('shop-details', {
+        sp: sp,
+        session: req.session.cart || cartnull,
+      });
+    })
+    .catch((err) => {
+      next(err);
+    });
+  
+});
+
+
+
+
+
+
+
+
+// const order = {
+//   appid: config.appid, 
+//   apptransid: appTransID,
+//   appuser: "demo", 
+//   apptime: Date.now(), // miliseconds
+//   item: "[]", 
+//   embeddata: "{}", 
+//   amount: 10000, 
+//   description: "Demo - Thanh toán đơn hàng #" + appTransID, 
+//   bank_code: "zalopayapp", 
+// };
+
+// appid|apptransid|appuser|amount|apptime|embeddata|item
+// const data = config.appid + "|" + order.apptransid + "|" + order.appuser + "|" + order.amount + "|" + order.apptime + "|" + order.embeddata + "|" + order.item;
+// order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
+
+// const b64Order = Buffer.from(JSON.stringify(order)).toString('base64');
+
+// https://sbgateway.zalopay.vn/openinapp?order={base64_data_with_urlencode}
+// console.log("https://sbgateway.zalopay.vn/pay?order=" + encodeURIComponent(b64Order));
+
+// const code_order = encodeURIComponent(1);
+
+// const link ="https://sbgateway.zalopay.vn/pay?order=" + code_order;
+app.get('/checkout', function (req, res) {
+
+  // console.log("Link la : "+ link);
+  
+  let getct = new Cart(req.session.cart||cartnull);
+  res.render('checkout', {
+    coupon : req.session.coupon||0,
+    session: getct,
+    getcart: getct.genetateArr() || [],
+    link:link
+  });
+});
+
+// request("https://sbgateway.zalopay.vn/pay?order=" + code_order,function (error, response, body) { 
+  
+//   // console.log(body);
+
+//   // console.log(response);
+  
+
+//   }
+// );
+
+// app.get("https://sbgateway.zalopay.vn/pay?order=" + code_order, (req, res) => {
+//   let result = {};
+
+//   console.log("RA CC");
+//   try {
+//     let dataStr = req.body.data;
+//     let reqMac = req.body.mac;
+//     // let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
+//     console.log("mac =", req.body.data);
+
+//     // kiểm tra callback hợp lệ (đến từ ZaloPay server)
+//     // if (reqMac !== mac) {
+//       // callback không hợp lệ
+//       // result.return_code = -1;
+//       // result.return_message = "mac not equal";
+//     // }
+//     // else {
+//       // thanh toán thành công
+//       // merchant cập nhật trạng thái cho đơn hàng
+//       let dataJson = JSON.parse(dataStr);
+//       console.log("update order's status = success where app_trans_id =", dataJson["app_trans_id"]);
+//       // result.return_code = 1;
+//       // result.return_message = "success";
+//     // }
+//   } catch (ex) {
+//     result.return_code = 0; // ZaloPay server sẽ callback lại (tối đa 3 lần)
+//     result.return_message = ex.message;
+//   }
+//   // thông báo kết quả cho ZaloPay server
+//   // res.json(result);
+// });
+
+// app.get('/shoping-cart', function (req, res, next) {
+//   var cart = new Cart(req.session.cart || cartnull);
+
+//   res.render('shoping-cart', {
+//     session: req.session.cart || cartnull,
+//     getcart: cart.genetateArr() || [],
+//     subtotal: cart.totalPrice || 0,
+//     phantram: 0,
+//     order:b64Order,
+//   });
+// });
+//route check out
+
+
+app.post('/checkcoupon', async function (req, res) {
+  macoupon = req.body.id;
+  let getcoupon = await coupon.find({ ma: req.body.id, trangthai: 1 });
+  let phantramcoupon = 0;
+  if (getcoupon.length == 1) {
+    phantramcoupon = getcoupon[0].phantram;
+    req.session.coupon = phantramcoupon;
+  }
+  res.send({ phantram: phantramcoupon });
+});
+
+app.post('/buy', (req, res) => {
+
+  paypal.configure({
+    mode: 'sandbox', // Sandbox or live
+    client_id:
+      'AbRnw6VYbjNYXz0lpXGs6rLi96qBRV9cAi7tC1kGC6b7O9lqgOVPx9Vpq-Bqwi3-N8QzjRnKazrxvLIS',
+    client_secret:
+      'ENh8p4FKF7SK3v24Tffd9LScPj4g0Us6PoXq0qUq_7DTt2paRIX7iDHn00qIuJKPeXqU-jLsto7fBSTT',
+  });
+    let getct = new Cart(req.session.cart);
+    let productcart = getct.genetateArr();
+  const billproducts = [{
+    "name": "abc",
+    "sku": "1",
+    "price": 10,
+    "currency": "USD",
+    "quality": 1
+  }];
+  const tt = 1023.983;
+  const am = { "currency": "USD", "total": tt.toFixed(2) };
+  const create_payment_json = {
+    "intent": "sale",
+    "payer": { payment_method: "paypal" },
+    "redirect_urls": {
+      "return_url": "http://localhost:3000/success",
+      "cancel_url": "http://localhost:3000/cancel"
+    },
+    "transactions": [{
+      "item_list": { "items": billproducts },
+      "amount": am,
+      "description": "sdafasdfasdfasdfa"
+    }]
+  };
+
+    paypal.payment.create(create_payment_json, function (error, payment) {
+      if (error) {
+        console.warn(error);
+      } else {
+        console.log('Create Payment Response');
+        console.log(payment);
+        payment.links.forEach(link => {
+          if (link.rel === 'approval_url') return res.redirect(link.href);
+        })
+      }
+    });
+})
+app.get('/success', (req, res) => {
+  res.send({ success: 'success' });
+});
+app.get('/cancel', (req, res) => {
+  res.send({ cancel: 'cancel' });
+});
+
+//route blog
+app.get('/blog', function (req, res) {
+  res.render('blog');
+});
 app.get('/blog-details', function (req, res) {
   res.render('blog-details');
 });
-
-// route shop grid
-// mongoosePaginate.paginate.options = {
-//   lean: true,
-//   limit: 20,
-// };
 app.get('/shop-grid', async function (req, res, next) {
   var filter;
   var search = req.query.search || '';
@@ -320,217 +591,7 @@ app.get('/shop-grid', async function (req, res, next) {
     }
   });
 
-  // await allsp
-  //       .find(filter)
-  //       .skip((perPage * page) - perPage)
-  //       .limit(perPage)
-  //       .exec(function(err, sanphamm) {
-  //           allsp.countDocuments().exec(function(err, count) {
-  //               if (err) return next(err)
-  //               res.render('shop-grid', {
-  //                 dssp: sanphamm,
-  //                 current: page,
-  //                 pages: Math.ceil(count / perPage),
-  //                 query: query,
-  //                 total: count
-  //               })
-  //           })
-  //       })
 });
-//app.use(mainroutes);
-
-//route shopping cart
-
-// app.use(passport.session());
-// app.use(function (req, res, next) {
-//   const session = req.session;
-//   next();
-// });
-
-app.get('/shoping-cart', function (req, res, next) {
-  var cart = new Cart(req.session.cart || cartnull);
-
-  res.render('shoping-cart', {
-    session: req.session.cart || cartnull,
-    getcart: cart.genetateArr() || [],
-    subtotal: cart.totalPrice || 0,
-    phantram: 0,
-  });
-});
-
-app.get('/add-to-cart', async function (req, res) {
-  var giasell;
-  var id = req.query.id;
-  var sl = req.query.sl;
-  var cart = new Cart(req.session.cart ? req.session.cart : cartnull);
-  const product = await allsp.findById({ _id: new ObjectId(id) });
-    
-  if (product.hieuluc == 'con')
-    giasell = product.gia - (product.gia * product.phantram) / 100;
-    else giasell = product.gia;
-  console.log(product.hieuluc);
-    cart.add(product, product._id, sl, giasell);
-    req.session.cart = cart;
-    res.redirect('/');
-});
-
-//route shop details
-
-var getitem = require('./model/sanpham');
-app.get('/shop-details', function (req, res) {
-  var id = req.query.id;
-  var o_id = new ObjectId(id);
-  getitem
-    .findOne({ _id: o_id })
-    .then((docs) => {
-      var sp = docs;
-      res.render('shop-details', {
-        sp: sp,
-        session: req.session.cart || cartnull,
-      });
-    })
-    .catch((err) => {
-      next(err);
-    });
-  //console.log(item);
-});
-
-//route blog
-app.get('/blog', function (req, res) {
-  res.render('blog');
-});
-//route check out
-app.get('/checkout', function (req, res) {
-  
-  let getct = new Cart(req.session.cart||cartnull);
-  res.render('checkout', {
-    coupon : req.session.coupon||0,
-    session: getct,
-    getcart: getct.genetateArr() || [],
-  });
-});
-
-// app.post('/buy', (req, res) => {
-
-//   paypal.configure({
-//     mode: 'sandbox', // Sandbox or live
-//     client_id:
-//       'AbRnw6VYbjNYXz0lpXGs6rLi96qBRV9cAi7tC1kGC6b7O9lqgOVPx9Vpq-Bqwi3-N8QzjRnKazrxvLIS',
-//     client_secret:
-//       'ENh8p4FKF7SK3v24Tffd9LScPj4g0Us6PoXq0qUq_7DTt2paRIX7iDHn00qIuJKPeXqU-jLsto7fBSTT',
-//   });
-//     let getct = new Cart(req.session.cart);
-//     let productcart = getct.genetateArr();
-//   const billproducts = [{
-//     "name": "abc",
-//     "sku": "1",
-//     "price": 10,
-//     "currency": "USD",
-//     "quality": 1
-//   }];
-//   const tt = 1023.983;
-//   const am = { "currency": "USD", "total": tt.toFixed(2) };
-//   const create_payment_json = {
-//     "intent": "sale",
-//     "payer": { payment_method: "paypal" },
-//     "redirect_urls": {
-//       "return_url": "http://localhost:3000/success",
-//       "cancel_url": "http://localhost:3000/cancel"
-//     },
-//     "transactions": [{
-//       "item_list": { "items": billproducts },
-//       "amount": am,
-//       "description": "sdafasdfasdfasdfa"
-//     }]
-//   };
-
-//     paypal.payment.create(create_payment_json, function (error, payment) {
-//       if (error) {
-//         console.warn(error);
-//       } else {
-//         console.log('Create Payment Response');
-//         console.log(payment);
-//         payment.links.forEach(link => {
-//           if (link.rel === 'approval_url') return res.redirect(link.href);
-//         })
-//       }
-//     });
-// })
-app.get('/success', (req, res) => {
-  res.send({ success: 'success' });
-});
-app.get('/cancel', (req, res) => {
-  res.send({ cancel: 'cancel' });
-});
-// app.post('/checkout', async function (req, res, next) {
-//   var phantram;
-//   const mac = req.session.coupon;
-//   const newcoupon = await coupon.find({ ma: mac });
-//   if(!newcoupon[0]){phantram=0;}
-//   else{phantram=newcoupon[0].phantram} 
-// var cart = new Cart(req.session.cart || {});
-// var totalQty=0;
-// arr_qty=[];
-// // if(!req.body.y)
-// // {
-// req.body.y.forEach(e=>{ 
-//   arr_qty.push(e);
-//   totalQty++;
-//  });
-
-//  arr_id=[];
-//  for(var e in req.session.cart.items)
-//  {
-//    arr_id.push(e);
-//  }
-
-// //  for(var e in arr_id)
-// //  { var sl_mua=arr_qty[e];
-// //   if(!check_sl(arr_id[e], sl_mua))
-// //   {
-    
-
-// //     return res.redirect('shoping-cart');
-// //     break;
-// //   }
-// // }
- 
-//  var arr_pro =  [];
-//  arr_pro = cart.genetateArr();
-// cart.totalPrice=0;
-// cart.totalQty=totalQty;
-// for (var i in arr_pro) {
-//   if(!arr_qty[i])
-//   {
-//     cart.remove(arr_id[i]);
-//   }
-//   else
-//   {cart.update(arr_id[i],arr_qty[i],giasell);}
-// }
-// req.session.cart = cart;
-//   res.render('checkout', {
-//     arr_qty: arr_qty,
-//     session: req.session.cart || cartnull,
-//     getcart: cart.genetateArr() || [],
-//     subtotal: cart.totalPrice || 0,
-//     phantram: phantram,
-//   });
-// });
-
-// // function check_sl(id , sl){
-// //   allsp.findById(new ObjectId(id), function (err, product) {
-// //     console.log("so luong kiem tra");
-// //     console.log( product.sl);
-// //     console.log("so luong mua");
-// //     console.log( sl);
-// //     if(sl>product.sl)
-// //     {
-// //       console.log("vuot qua so luong kho");
-// //       return false;
-// //     }
-// //   });
-// // }
-
 function truhangton(id, value) {
   let hangton = require('./model/tonkho');
   hangton.findOne({ id: id,trangthai:0 }).then((result) => {
@@ -542,109 +603,111 @@ function truhangton(id, value) {
       hangton
         .findOneAndUpdate({ id: id }, { $set: { sl: slcu } }, { new: true })
         .then((abc) => {
-          console.log(abc);
+          
         });
     }
   });
 }
 var in4 = {};
 var globalcart;
-// app.post('/bill', async function (req, res, next) {
-//   console.log(req.body);
-//   var cart = new Cart(req.session.cart || {});
-//   globalcart = new Cart(req.session.cart);
-//   var phantram;
-//   console.log(macoupon);
-//   const newcoupon = await coupon.find({ ma: macoupon });
-//   console.log(newcoupon);
-//   if (!newcoupon[0]) {
-//     phantram = 0;
-//   }
-//   else {
-//     phantram = newcoupon[0].phantram;
-//     await coupon.findOneAndUpdate({ ma: macoupon }, { $set: { trangthai: 2 } }, { new: true });
-//   } 
-//   var mang_cart =[];
-//   var total_payment=cart.totalPrice*(100-Number(phantram))/100;
-//   mang_cart = cart.genetateArr();
-//   in4 = {
-//     first_name: req.body.first_name,
-//     last_name: req.body.last_name,
-//     street_address: req.body.street_address,
-//     apartment_address: req.body.apartment_address,
-//     phone: req.body.phone,
-//     email: req.body.email,
-//     note: req.body.note || ''
-//   };
-//     const bill_order = new bill({
-//       first_name: req.body.first_name,
-//       last_name: req.body.last_name,
-//       street_address: req.body.street_address,
-//       apartment_address:req.body.apartment_address,
-//       phone: req.body.phone,
-//       email: req.body.email,
-//       note: req.body.note || '',
-//       coupon: macoupon,
-//       discount_percent : phantram,
-//       total_order_value: cart.totalPrice,
-//       total_payment:  total_payment,
-//       bill:mang_cart,
-//     });
-//   if (req.body.type == 'paypal') {
-//     mang_cart.forEach(async e => {
-//       let oldvalue = await allsp.findById({ _id: new ObjectId(e.item._id) });
-//       truhangton(e.item._id, e.qty);
-//       let resetvalue = Number(oldvalue.sl) - Number(e.qty) + '';
-//       let objupdate = { sl: resetvalue };
-//       if (Number(resetvalue) == 0) {
-//         objupdate.trangthai = 'het';
-//       }
-//       await allsp.findByIdAndUpdate({ _id: new ObjectId(e.item._id) }, { $set: objupdate },{ new: true });
-//     })
-//     bill_order.save();
-//     cart.deleteall();
-//     req.session.cart = cart;
-//     req.session.coupon = 0;
-//     res.send({ data: '/', textStatus: 200 });
-//   } else if (req.body.type == 'payment') {
-//     let htmlt = '<p>Nhấn vào đây để xác nhận đơn hàng: <a href="http://localhost:3000/xacthucdonhang">Đây</a> sau khi thực hiện đơn hàng sẽ được xử lý <p> <p>OGANI thank you !</p>';
-    
-//     var transporter = nodemailer.createTransport({
-//       service: 'gmail',
-//       auth: {
-//         user: process.env._EMAIL,
-//         pass: process.env._PASSWORD,
-//       },
-//     });
-//     var mailOptions = {
-//       from: 'OGANI <' + process.env._EMAIL + '>',
-//       to: req.body.email,
-//       subject: 'Xác thực đơn hàng',
-//       html: htmlt,
-//     };
-//     transporter.sendMail(mailOptions, function (error, info) {
-//       if (error) {
-//         console.log(error);
-//       } else {
-//         console.log('Email sent: ' + info.response);
-//       }
-//     });
-//     //update trangthai when product =0 ;
-   
-//     //
 
-//     cart.deleteall();
-//     req.session.cart = cart;
-//     res.send({ data: '/', textStatus: 200 });
-//   }
-    
-// });
-app.get('/xacthucdonhang',async (req, res) => {
-  var cart = globalcart;
+app.post('/bill', async function (req, res, next) {
+  console.log(req.body);
+  var cart = new Cart(req.session.cart || {});
+  globalcart = new Cart(req.session.cart);
   var phantram;
   console.log(macoupon);
   const newcoupon = await coupon.find({ ma: macoupon });
   console.log(newcoupon);
+  if (!newcoupon[0]) {
+    phantram = 0;
+  }
+  else {
+    phantram = newcoupon[0].phantram;
+    await coupon.findOneAndUpdate({ ma: macoupon }, { $set: { trangthai: 2 } }, { new: true });
+  } 
+  var mang_cart =[];
+  var total_payment=cart.totalPrice*(100-Number(phantram))/100;
+  mang_cart = cart.genetateArr();
+  in4 = {
+    first_name: req.body.first_name,
+    last_name: req.body.last_name,
+    street_address: req.body.street_address,
+    apartment_address: req.body.apartment_address,
+    phone: req.body.phone,
+    email: req.body.email,
+    note: req.body.note || ''
+  };
+    const bill_order = new bill({
+      first_name: req.body.first_name,
+      last_name: req.body.last_name,
+      street_address: req.body.street_address,
+      apartment_address:req.body.apartment_address,
+      phone: req.body.phone,
+      email: req.body.email,
+      note: req.body.note || '',
+      coupon: macoupon,
+      discount_percent : phantram,
+      total_order_value: cart.totalPrice,
+      total_payment:  total_payment,
+      bill:mang_cart,
+    });
+  if (req.body.type == 'paypal') {
+    mang_cart.forEach(async e => {
+      let oldvalue = await allsp.findById({ _id: new ObjectId(e.item._id) });
+      truhangton(e.item._id, e.qty);
+      let resetvalue = Number(oldvalue.sl) - Number(e.qty) + '';
+      let objupdate = { sl: resetvalue };
+      if (Number(resetvalue) == 0) {
+        objupdate.trangthai = 'het';
+      }
+      await allsp.findByIdAndUpdate({ _id: new ObjectId(e.item._id) }, { $set: objupdate },{ new: true });
+    })
+    bill_order.save();
+    cart.deleteall();
+    req.session.cart = cart;
+    req.session.coupon = 0;
+    res.send({ data: '/', textStatus: 200 });
+  } else if (req.body.type == 'payment') {
+    let htmlt = '<p>Nhấn vào đây để xác nhận đơn hàng: <a href="http://localhost:3000/xacthucdonhang">Đây</a> sau khi thực hiện đơn hàng sẽ được xử lý <p> <p>OGANI thank you !</p>';
+    
+    var transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env._EMAIL,
+        pass: process.env._PASSWORD,
+      },
+    });
+    var mailOptions = {
+      from: 'OGANI <' + process.env._EMAIL + '>',
+      to: req.body.email,
+      subject: 'Xác thực đơn hàng',
+      html: htmlt,
+    };
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+    //update trangthai when product =0 ;
+   
+    //
+
+    cart.deleteall();
+    req.session.cart = cart;
+    res.send({ data: '/', textStatus: 200 });
+  }
+    
+});
+
+app.get('/xacthucdonhang',async (req, res) => {
+  var cart = globalcart;
+  var phantram;
+  
+  const newcoupon = await coupon.find({ ma: macoupon });
+  
   if (!newcoupon[0]) {
     phantram = 0;
   }
@@ -706,10 +769,10 @@ app.get('/bill', async function (req, res, next) {
   if(!newcoupon[0]){phantram=0;}
   else{phantram=newcoupon[0].phantram} 
   var cart = new Cart(req.session.cart ? req.session.cart : {});
-// console.log(cart);
+
 var mang = [];
 mang = cart.genetateArr();
-// console.log(mang);
+
   res.render('bill',{
     session: req.session.cart || cartnull,
     getcart: cart.genetateArr() || [],
@@ -785,16 +848,6 @@ app.post('/findbyday', async function (req, res,next) {
 });
 
 
-// app.post('/export_csv', async function (req, res,next) {
-
-//   fastcsv
-//     .write(datat, { headers: true })
-//     .on("finish", function() {                                                                  
-//       console.log("Write to bezkoder_mongodb_fastcsv.csv successfully!");
-//     })
-//     .pipe(ws);
-// res.redirect("/hoadon");
-// })
 
 
 
@@ -806,7 +859,7 @@ app.get('/coupon',async function (req, res) {
 
 app.get('/qlsanpham',async function (req, res) {
   const spl = await allsp.find({}).sort({ tensp: 1,trangthai: -1 });
-  //console.log(spl);
+ 
   res.render('qlsanpham',{data:spl});
 });
 //route admin
@@ -845,7 +898,7 @@ app.post('/admin',async function (req, res) {
 
 app.get('/taikhoan', async (req, res) => {
   const dataac = await ac.find({});
-  //console.log(dataac);
+  
   zdadsfasdfa[0] = dataac;
   res.render('taikhoan', { dataac: zdadsfasdfa,user:zdadsfasdfa[1]});
 });
@@ -883,6 +936,7 @@ app.put('/updateprofile', async (req, res) => {
 
 const contactmessage = require('./model/contact');
 const phieunhap = require('./model/phieunhap');
+const { response } = require('express');
 app.post('/contact', async function (req, res) {
   const newcontact = new contactmessage({
     name: req.body.name,
@@ -912,24 +966,17 @@ app.post('/mailsub',async (req, res) => {
   }
   res.send('successsub');
 })
-app.post('/validateemail', (req, res) => {
-  var email = req.body.email;
-  console.log(email);
-  console.log(email.length);
-  const emailExistence = require('email-existence');
-  emailExistence.check(email, function (error, response) {
-    res.send(response);
-    console.log(response);
-  });
-})
+
+
+
 //
 
 app.post('/updatesoluong', async (req, res) => {
   if (typeof req.body.sl === 'number') {
-    //console.log(req.body.sl);
+   
     let getallsl = await allsp.findById({ _id: new ObjectId(req.body.id[1]) });
     if (Number(req.body.sl) >= 0 && Number(req.body.sl) <= Number(getallsl.sl)) {
-      //console.log(req.body.sl, getallsl.sl);
+      
       let nc = new Cart(req.session.cart);
       let id_ = req.body.id[1];
       nc.update(id_, req.body.sl);
@@ -988,29 +1035,7 @@ var namtruoc  = namhientai-1;
  });
 })
 
-// app.post('/pie',async (req, res,next) => {
-//   var year = req.body.Courses;
-// var start = new Date(Number(year), 1, 1);
-// var end = new Date(Number(year), 12, 31);
-// if(namhientai==year_now.getFullYear())
-// {
-//   namtruoc= namhientai-1;
-// }  
-// else 
-// {
-//   namtruoc = year_now.getFullYear();
-// }
-// const data = await bill.find({date: {$gte: start, $lt: end}});
 
-// data.forEach(e => {
-//   var qty_bill=0;
-
-// e.
-
- 
-//   res.render('Pie_Chart');
-// });
-// })
 
 
 app.post('/thongke', async function (req, res,next) {
@@ -1251,7 +1276,7 @@ app.get('/magiamgia', async (req, res) => {
 
 app.get('/nhaphang',async (req, res) => {
   let gettableproduct =await allsp.find({});
-  //console.log(gettableproduct);
+
   res.render('nhaphang',{data:gettableproduct});
 })
 app.post('/dathang', async (req, res) => {
@@ -1265,7 +1290,7 @@ app.post('/dathang', async (req, res) => {
   for ([key, value] of donhanglist) {
     const gettensp = await allsp.findById({ _id: new ObjectId(key) });
     let objecttensp = gettensp.tensp;
-    //console.log(objecttensp, objecttensp.length);
+   
 
     objdonhang.dsnhap.push({
       id: key,
@@ -1288,8 +1313,7 @@ app.get('/xacnhannhaphang',async(req, res) => {
 })
 app.put('/updatedonhang', async (req, res) => {
   let phieunhap = require('./model/phieunhap');
-  console.log(req.body.id);
-  console.log(req.body.status);
+ 
   await phieunhap.findByIdAndUpdate({ _id: new ObjectId(req.body.id) }, { $set: { status: Number(req.body.status) } }, { new: true });
   res.send('Update success...');
 })
@@ -1332,7 +1356,7 @@ app.post('/updatesoluongsanpham',async (req, res) => {
 
   var upload2 = multer({ storage: storage2 }).single('exel');
   upload2(req, res,async function (err) {
-    // console.log(req.file);
+ 
     const result = excelToJson({
       sourceFile: './upload/'+req.file.filename,
       sheets: [{
@@ -1346,7 +1370,7 @@ app.post('/updatesoluongsanpham',async (req, res) => {
         }
       }],
     });
-    //console.log(result.Sheet1);
+    
     // update donhang, e là từng phiếu nhập
     let arrayphieunhap = result.Sheet1;
     const hoadon = require('./model/phieunhap');
@@ -1358,7 +1382,7 @@ app.post('/updatesoluongsanpham',async (req, res) => {
         console.log('Không thể cập nhật số lượng sản phẩm: ' + e.tensp);
       } else {
         let getdsnhapphieunhap = getphieunhap[0].dsnhap;
-        //console.log(getdsnhapphieunhap);
+       
         getdsnhapphieunhap.forEach(async(ee) => {
           if (ee.tensp == e.tensp) {
             await hoadon.findOneAndUpdate(
@@ -1481,7 +1505,7 @@ app.put('/updatetrangthai', async (req, res) => {
   if (status == "Hết") {
     status = "con";
   } else status = "het";
-  console.log(id, status);
+  
   allsp.findByIdAndUpdate(
     { _id: new ObjectId(id) },
     { $set: { trangthai: status } },
@@ -1517,7 +1541,7 @@ app.put('/updatehieuluc', async (req, res) => {
 app.post('/creatcoupon', (req, res) => {
   var sl = req.body.sl;
   var phantram = req.body.phantram;
-  //console.log(sl);
+  
   const randomString = require('randomstring');
   const newcoupon = require('./model/coupon');
   for (var i = 1; i <= sl; i++){
@@ -1676,7 +1700,7 @@ app.post('/sendemailtouser', async (req, res) => {
   let htmlt =
     '<p>Nội dung: ' + req.body.noidung + '</p>';
   if (req.body.coupon) {
-    //console.log(req.body);
+    
     let newcoupon =await coupon.find({ ma: req.body.coupon,trangthai: 0 });
     if (newcoupon.length == 0) {
       res.send('Mã giảm giá không tồn tại hoặc đã được sử dụng !!!!'); return;
@@ -1714,7 +1738,7 @@ app.get('/nhacungcap',async (req, res) => {
   const spl = await allsp
     .find({})
     .sort({ sl: 1 });
-  //console.log(spl);
+  
   res.render('nhacungcap',{data:spl});
 })
 app.put('/updatencc', async (req, res) => {
@@ -1727,7 +1751,7 @@ app.put('/updatencc', async (req, res) => {
 
 app.post('/apisession', (req, res) => {
   let id = req.body.id;
-  //console.log(id);
+  
   var crt = new Cart(req.session.cart);
   crt.remove(id);
   crt.totalQty--;
@@ -1744,7 +1768,7 @@ app.put('/regetcoupon',(req, res)=> {
 })
 
 app.post('/abc', async (req, res) => {
-  console.log(req.body);
+  
   let hangton = require('./model/tonkho');
   let gethangton = await hangton.find({
     ngayhethan: { $gte: new Date(req.body.date1), $lte: new Date(req.body.date2) },
