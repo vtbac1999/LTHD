@@ -360,23 +360,23 @@
                   </label>
                 </div>
 
-                <div class="checkout__input__checkbox">
+                <!-- <div class="checkout__input__checkbox">
                   <label for="zalopay">
                     ZaloPay 
                     <input type="checkbox" id="zalopay" />
                     <span class="checkmark"></span>
                   </label>
-                </div>
+                </div> -->
 
-                <a href= "<%=link%>" > Heloo</a>
+               
 
                 <div style="display: none;" id="paypal-button-container"></div>
                 <!-- <form action="/buy" method="POST"> -->
 
             
-                <button style="display: none;" type="submit" id="zalopay-btn" class="site-btn"  >
+                <!-- <button style="display: none;" type="submit" id="zalopay-btn" class="site-btn"  >
                   Zalo Pay
-                </button>
+                </button> -->
 
 
                 <button type="submit" class="site-btn" disabled>
@@ -476,6 +476,8 @@
           } else {
             $('.site-btn').prop('disabled', true);
           }
+         
+
         });
 
         $('#paypal').click(() => {
@@ -492,21 +494,25 @@
 
         $('#zalopay').click(() => {
 
-          let getcheck = $('#zalopay').is(':checked');
-          if (getcheck == true) {
-            $('#zalopay-btn').css('display', 'block');
-            $('#payment').prop('checked', false);
-            $('#paypal').prop('checked', false);
-            $('.site-btn').prop('disabled', false);
-          } else {
-            $('#zalopay-btn').css('display', 'none');
-            $('.site-btn').prop('disabled', true);
-          }
+          // let getcheck = $('#zalopay').is(':checked');
+          // if (getcheck == true) {
+          //   $('#zalopay-btn').css('display', 'block');
+          //   $('#payment').prop('checked', false);
+          //   $('#paypal').prop('checked', false);
+          //   $('.site-btn').prop('disabled', false);
+          // } else {
+          //   $('#zalopay-btn').css('display', 'none');
+          //   $('.site-btn').prop('disabled', true);
+          // }
+
+          
           
            
             
             
         });
+
+
 
         function checkemailbill(email, cb) {
           $.ajax({
@@ -652,11 +658,23 @@
         }
 
         $('.site-btn').click((e) => {
-          e.preventDefault();
-          let getcheckpayment = $('#payment').is(':checked');
-          let getcheckpaypal = $('#paypal').is(':checked');
+          // e.preventDefault();
+          // let getcheckpayment = $('#payment').is(':checked');
+          // let getcheckpaypal = $('#paypal').is(':checked');
           
-          checkin4();
+          // checkin4();
+          $.ajax({
+                    url: '/qrcode',
+                    method: 'GET',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                   
+
+                    }),
+                    success: function(data, textStatus) {
+                      window.location.href='http://localhost:3000/qrcode';
+                    }
+                  });
           
         });
 

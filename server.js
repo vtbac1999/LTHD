@@ -6,6 +6,8 @@ const mongodb = require('mongoose');
 const router = require('express').Router();
 const https = require('https');
 const axios =require('axios');
+// const flash = require('connect-flash');
+const passport = require('passport');
 
 const path = require('path');
 const cors = require('cors');
@@ -15,7 +17,6 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const mongostore = require('connect-mongo')(session);
 const excelToJson = require('convert-excel-to-json');
-const passport = require('passport');
 const fastcsv = require("fast-csv");
 const fs = require("fs");
 const csrfProctection = csrf({ cookie: true });
@@ -28,22 +29,12 @@ const CryptoJS = require('crypto-js'); // npm install crypto-js
 const uuid = require('uuid'); // npm install uuid
 const moment = require('moment'); // npm install moment
 const QRCode = require('qrcode');
-
 const User = require('./model/user');
 const {registerValidation, loginValidation} = require('./validation');
-
 const jwt = require('jsonwebtoken');
 
 
 
-
-config = {
-  appid: "2554",
-  key1: "sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn",
-  key2: "trMrHtvjo6myautxDUiAcYsVtaeQ8nhf"
-};
-
-let appTransID = `${moment().format('YYMMDD')}_${uuid.v1()}`
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -87,6 +78,7 @@ app.use(express.json());
 app.use(express.static('./public'));
 //app.use(express.static(path.join(__dirname, 'public')));
 var Cart = require('./model/cart');
+var User_test = require('./model/user_test');
 
 
 app.use(
@@ -96,7 +88,7 @@ app.use(
     resave: true,
     // resave: true,
     store: new mongostore({ mongooseConnection: mongodb.connection }),
-    cookie: { secure: false, httpOnly: true, maxAge: 600 },
+    cookie: { secure: false, httpOnly: true, maxAge: 6000000 },
   })
 );
 
@@ -109,6 +101,9 @@ const port = 3000;
 app.listen(port, console.log(`Listening on port ${port}...`));
 
 
+// app.use(flash());
+app.use(passport.initialize())
+app.use(passport.session());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -122,56 +117,15 @@ const mongoosePaginate = require('mongoose-paginate-v2');
 // load product route index
 const schema = require('./model/schema');
 const cartnull = { item: {}, totalQty: 0, totalPrice: Number(0) };
+const usernull ={name:"", email:"",password:""};
 const allsp = require('./model/sanpham');
 const dssanpham = require('./model/sanpham');
 const bill = require('./model/bill');
-
 const dsspnoibat = require('./model/sanpham');
 const coupon = require('./model/coupon');
 const ObjectId = require('mongodb').ObjectID;
 
 
-
-
-var version = "00"
-var version_len = "02"
-var version_value= "01"
-/////////////////////////////////////////////////////////
-var method ="01"
-var method_len ="02"  
-var value_method= "11"
-///////////////////////////////////////////////////////////////
-var info = "29"
-var info_len="33"
-  var unique_id ="01"
-  var unique_len=""  //len cua unique
-  var unique = ""   //unique mac dinh
-  var infomation_id="02"
-  var information_len=""
-  var information=""
-//////////////////////////
-var infosub = "62" 
-var infosub_len = ""
-var bill01 = "01"
-var bill_len = "" //len id_bill
-var bill_value ="hdlsdj1212" 
-var customer ="06"
-var customer_len=""
-var customer_value=""
-//////////////////////////////
-var subtotal ="54"
-var subtotal_len=""
-var subtotal_value=""
-
-var chuoi =  version + version_len+ version_value + method+ method_len+ value_method+info+info_len+unique_id+unique_len+unique
-var chuoi2= infomation_id+information_len+information
-var chuoi3= infosub+infosub_len+bill01+bill_len+bill_value+customer+customer_len+customer_value+subtotal+subtotal_len+subtotal_value;
-var chuoitong = chuoi+chuoi2+chuoi3;
-
-// console.log("chuoi la " +chuoitong);
-//home
-// const data2 
-// const data
 app.get('/', async (req, res) => {
   // req.session.destroy();
    data = await dssanpham.find({
@@ -185,29 +139,24 @@ app.get('/', async (req, res) => {
     sl: { $regex: /[^0]/, $options: 'm' },
   });
   var cart = new Cart(req.session.cart || cartnull);
-  // console.log(req.session.user);
-  var login = (req.session.user || null);
+  var user_test = new User_test(req.session.user || usernull);
+  
+  
+
   res.render('index', {
     listsp: data,
     listspnoibat: data2,
     message: '',
     session: cart,
-    logined: login
+    logined: user_test
   });
-
-
-  // let img='';
-  //   let qr= await QRCode.toDataURL(chuoitong);
-  //   console.log(qr);
-  //   img = `<image src= " `+qr+ `" />`
-  //   return res.send(img);
+  
 });
 
 
 
 const authRoute = require('./routes/auth');
 // const userRoute = require('./routes/users');
-
 
 //Route Middlewares
 app.use('/api/user',authRoute);
@@ -226,7 +175,8 @@ app.get('/register',async(req, res)=>{
 });
 
 app.get('/login',async(req, res)=>{
-  if(req.session.user)
+  console.log(req.session.user);
+  if(req.session.user !== null)
   {
     return res.redirect('http://localhost:3000')
   }
@@ -240,8 +190,8 @@ app.get('/login',async(req, res)=>{
 
 app.post('/validateemail', (req, res) => {
   var email = req.body.email;
-  console.log("cc"+email);
-  console.log(email.length);
+  
+  
   const emailExistence = require('email-existence');
   emailExistence.check(email, function (error, response) {
     res.send(response);
@@ -253,23 +203,16 @@ app.post('/validateemail', (req, res) => {
 
 
 
+
+
+
 app.post('/register', async(req, res)=>{
-    //hash password
-    // const salt = bcrypt.genSalt(10);
-    // const hashedPassword=  bcrypt.hash(req.body.password,salt);
+    // hash password
+    const salt =await bcrypt.genSalt(10);
+    const hashedPassword = await await bcrypt.hash(req.body.password, salt);
+    
 
-    console.log("CO VO DAY");
-
-    data = await dssanpham.find({
-      trangthai: 'con',
-      hieuluc: 'con',
-      sl: { $regex: /[^0]/, $options: 'm' },
-    });
-    data2 = await dsspnoibat.find({
-      trangthai: 'con',
-      noibat: true,
-      sl: { $regex: /[^0]/, $options: 'm' },
-    });
+    
 
     // console.log(req.session.user);
    
@@ -277,36 +220,66 @@ app.post('/register', async(req, res)=>{
     const user =new User({
         name:req.body.name,
         email:req.body.email,
-        password:req.body.password
+        password: hashedPassword
     });
     try {
         const savedUser= user.save();
-        req.session.user = user;
-        if(req.session.user)
-        var login = (req.session.user.name || null);
-    var cart = new Cart(req.session.cart || cartnull);
-
-        console.log(cart);
-        
-  res.render('index', {
-    listsp: data,
-    listspnoibat: data2,
-    message: '',
-    session: cart,
-    logined: login
-  });
+  
        
-
+    res.redirect('/login');
 
     } catch (err) {
-        res.status(400).send(err);
+       
     }
 });
 
 
 
-app.post('/login',authRoute);
+app.post('/login',async(req,res)=>{
+  const salt =await bcrypt.genSalt(10);
+  const hashedPassword = await await bcrypt.hash(req.body.password, salt);
 
+  
+
+  data = await dssanpham.find({
+    trangthai: 'con',
+    hieuluc: 'con',
+    sl: { $regex: /[^0]/, $options: 'm' },
+  });
+  data2 = await dsspnoibat.find({
+    trangthai: 'con',
+    noibat: true,
+    sl: { $regex: /[^0]/, $options: 'm' },
+  });
+
+  // console.log(req.session.user);
+  const user =new User({
+    name:req.body.name,
+    email:req.body.email,
+    password: hashedPassword
+});
+
+req.session.user = user;
+ 
+      var cart = new Cart(req.session.cart || cartnull);
+      var user_test = new User_test(req.session.user || cartnull);
+res.render('index', {
+  listsp: data,
+  listspnoibat: data2,
+  message: 1,
+  session: cart,
+  logined: user_test
+});
+     
+});
+
+app.get('/logout',async(req,res)=>{
+req.session.user=null;
+
+res.redirect('/');
+
+
+})
 
 app.get('/index', async (req, res) => {
   const data = await dssanpham.find({
@@ -325,13 +298,69 @@ app.get('/index', async (req, res) => {
     listsp: data,
     listspnoibat: data2,
     message: '',
-    session: cart,
-    logined: login
+    session: cart
   });
 });
 
 
+app.get('/qrcode', async(req, res) => {
 
+  const order = {
+    apptime: Date.now()
+  };
+
+
+const b64Order = Buffer.from(JSON.stringify(order)).toString('base64');
+
+console.log(order);
+
+
+  let getct = new Cart(req.session.cart||cartnull);
+  var getcart= getct.genetateArr();
+  // console.log("Link la : "+ link);
+var version = "00"
+var version_len = "02"
+var version_value= "01"
+/////////////////////////////////////////////////////////
+var method ="01"
+var method_len ="02"  
+var value_method= "11"
+///////////////////////////////////////////////////////////////
+var info = "29"     //merchar account infomation
+var info_len="30"
+  var unique_id ="00"
+  var unique_len="12"  //len cua unique
+  var unique = "D15600000000"   //unique mac dinh
+//danh cho cac don vi phat  trien qa 
+//dinh nghia don vi nào phat trien
+  var infomation_id="05"
+  var information_len="10"
+  var information="A93FO3230Q"
+
+//////////////////////////
+var infosub = "62" 
+var infosub_len = b64Order.length+getct.totalPrice.length;
+
+var bill01 = "01"
+var bill_len = b64Order.length ;//len id_bill
+var bill_value =b64Order  //id bill
+
+
+//////////////////////////////
+var subtotal ="54"  //trasaction amount
+var subtotal_len=getct.totalPrice.length; // độ dài
+var subtotal_value= getct.totalPrice;  //load value
+
+var chuoi =  version + version_len+ version_value + method+ method_len+ value_method+info+info_len+unique_id+unique_len+unique
+var chuoi2= infomation_id+information_len+information
+var chuoi3= infosub+infosub_len+bill01+bill_len+bill_value+subtotal+subtotal_len+subtotal_value;
+var chuoitong = chuoi+chuoi2+chuoi3;
+  let img='';
+    let qr= await QRCode.toDataURL(chuoitong);
+    
+    img = `<image src= " `+qr+ `" />`
+    return res.send(img);
+  });
 
 app.get('/add-to-cart', async function (req, res) {
   var giasell;
@@ -372,101 +401,35 @@ app.get('/shop-details', function (req, res) {
 
 
 
-
-
-
-
-
-// const order = {
-//   appid: config.appid, 
-//   apptransid: appTransID,
-//   appuser: "demo", 
-//   apptime: Date.now(), // miliseconds
-//   item: "[]", 
-//   embeddata: "{}", 
-//   amount: 10000, 
-//   description: "Demo - Thanh toán đơn hàng #" + appTransID, 
-//   bank_code: "zalopayapp", 
-// };
-
-// appid|apptransid|appuser|amount|apptime|embeddata|item
-// const data = config.appid + "|" + order.apptransid + "|" + order.appuser + "|" + order.amount + "|" + order.apptime + "|" + order.embeddata + "|" + order.item;
-// order.mac = CryptoJS.HmacSHA256(data, config.key1).toString();
-
-// const b64Order = Buffer.from(JSON.stringify(order)).toString('base64');
-
-// https://sbgateway.zalopay.vn/openinapp?order={base64_data_with_urlencode}
-// console.log("https://sbgateway.zalopay.vn/pay?order=" + encodeURIComponent(b64Order));
-
-// const code_order = encodeURIComponent(1);
-
-// const link ="https://sbgateway.zalopay.vn/pay?order=" + code_order;
 app.get('/checkout', function (req, res) {
 
-  // console.log("Link la : "+ link);
   
-  let getct = new Cart(req.session.cart||cartnull);
+// console.log(typeof req.session.coupon)
+let getct = new Cart(req.session.cart||cartnull);
+
+  
   res.render('checkout', {
     coupon : req.session.coupon||0,
     session: getct,
-    getcart: getct.genetateArr() || [],
-    link:link
+    getcart: getct.genetateArr() || []
   });
 });
 
-// request("https://sbgateway.zalopay.vn/pay?order=" + code_order,function (error, response, body) { 
-  
-//   // console.log(body);
 
-//   // console.log(response);
-  
 
-//   }
-// );
 
-// app.get("https://sbgateway.zalopay.vn/pay?order=" + code_order, (req, res) => {
-//   let result = {};
 
-//   console.log("RA CC");
-//   try {
-//     let dataStr = req.body.data;
-//     let reqMac = req.body.mac;
-//     // let mac = CryptoJS.HmacSHA256(dataStr, config.key2).toString();
-//     console.log("mac =", req.body.data);
+app.get('/shoping-cart', function (req, res, next) {
+  var cart = new Cart(req.session.cart || cartnull);
 
-//     // kiểm tra callback hợp lệ (đến từ ZaloPay server)
-//     // if (reqMac !== mac) {
-//       // callback không hợp lệ
-//       // result.return_code = -1;
-//       // result.return_message = "mac not equal";
-//     // }
-//     // else {
-//       // thanh toán thành công
-//       // merchant cập nhật trạng thái cho đơn hàng
-//       let dataJson = JSON.parse(dataStr);
-//       console.log("update order's status = success where app_trans_id =", dataJson["app_trans_id"]);
-//       // result.return_code = 1;
-//       // result.return_message = "success";
-//     // }
-//   } catch (ex) {
-//     result.return_code = 0; // ZaloPay server sẽ callback lại (tối đa 3 lần)
-//     result.return_message = ex.message;
-//   }
-//   // thông báo kết quả cho ZaloPay server
-//   // res.json(result);
-// });
-
-// app.get('/shoping-cart', function (req, res, next) {
-//   var cart = new Cart(req.session.cart || cartnull);
-
-//   res.render('shoping-cart', {
-//     session: req.session.cart || cartnull,
-//     getcart: cart.genetateArr() || [],
-//     subtotal: cart.totalPrice || 0,
-//     phantram: 0,
-//     order:b64Order,
-//   });
-// });
+  res.render('shoping-cart', {
+    session: req.session.cart || cartnull,
+    getcart: cart.genetateArr() || [],
+    subtotal: cart.totalPrice || 0,
+    phantram: 0,
+    
+  });
+});
 //route check out
 
 
@@ -937,6 +900,7 @@ app.put('/updateprofile', async (req, res) => {
 const contactmessage = require('./model/contact');
 const phieunhap = require('./model/phieunhap');
 const { response } = require('express');
+const user_test = require('./model/user_test');
 app.post('/contact', async function (req, res) {
   const newcontact = new contactmessage({
     name: req.body.name,

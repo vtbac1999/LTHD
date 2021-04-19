@@ -106,8 +106,7 @@
           <div class="col-lg-6 col-md-6">
             <div class="header__top__left">
                             <ul>
-                                <li><i class="fa fa-envelope"></i> hello <%=logined%></li>
-                                <li>Free Shipping for all Order of $99</li>
+                                
                             </ul>
                         </div>
           </div>
@@ -128,9 +127,10 @@
                                     <li><a href="#">English</a></li>
                                 </ul>
                             </div>
-                            <% if(logined){ %>             
+                            <% if(logined.name != ""){ %>
+                                       
               <div class="header__top__right__auth" id="login">
-                                <a href="/logout"><i class="fa fa-user"></i> Logout</a>
+                                <a href="/logout"><i class="fa fa-user"></i> <span><%=logined.name%></span></a>
                             </div>
                             
                             <%} else{%>
